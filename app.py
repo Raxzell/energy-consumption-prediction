@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import requests
+import numpy as np  # <-- TAMBAHAN BARU
 from datetime import datetime, timedelta, timezone
 
 # Load Model
@@ -139,20 +140,32 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
         'rv2': [24.9]
     })
     
-    # Eksekusi Prediksi Model dan Konversi ke Float murni
-    hasil_lr = float(lr_model.predict(data_input)[0])
-    hasil_xgb = float(xgb_model.predict(data_input)[0])
-    hasil_rf = float(rf_model.predict(data_input)[0])
-
-    st.success("Prediksi Berhasil Diproses!")
-    st.markdown("### Perbandingan Hasil Prediksi Model:")
+    # PERBAIKAN: Memaksa semua tipe data menjadi float sebelum masuk model
+    data_input = data_input.astype(float)
     
-    col_res1, col_res2, col_res3 = st.columns(3)
-    with col_res1:
-        st.metric(label="Linear Regression", value=f"{hasil_lr:.1f} Wh")
-    with col_res2:
-        st.metric(label="XGBoost", value=f"{hasil_xgb:.1f} Wh")
-    with col_res3:
-        st.metric(label="Random Forest", value=f"{hasil_rf:.1f} Wh")
+    # PERBAIKAN: Try-Except Block untuk nangkep error tersembunyi
+    try:
+        # np.ravel memastikan bentuk output apapun (array 1D, 2D, atau angka jomblo) 
+        # dipaksa jadi array rapi, baru diambil index [0]-nya.
+        hasil_lr = float(np.ravel(lr_model.predict(data_input))[0])
+        hasil_xgb = float(np.ravel(xgb_model.predict(data_input))[0])
+        hasil_rf = float(np.ravel(rf_model.predict(data_input))[0])
+
+        st.success("Prediksi Berhasil Diproses!")
+        st.markdown("### Perbandingan Hasil Prediksi Model:")
         
-    st.info("Catatan: Nilai di atas sudah dibulatkan maksimal 1 angka di belakang koma.")
+        col_res1, col_res2, col_res3 = st.columns(3)
+        with col_res1:
+            st.metric(label="Linear Regression", value=f"{hasil_lr:.1f} Wh")
+        with col_res2:
+            st.metric(label="XGBoost", value=f"{hasil_xgb:.1f} Wh")
+        with col_res3:
+            st.metric(label="Random Forest", value=f"{hasil_rf:.1f} Wh")
+            
+        st.info("Catatan: Nilai di atas sudah dibulatkan maksimal 1 angka di belakang koma.")
+        
+    except Exception as e:
+        # Menampilkan error ASLI yang disembunyikan Streamlit ke layar
+        st.error("🚨 TERJADI ERROR SAAT MODEL MELAKUKAN PREDIKSI!")
+        st.code(f"Tipe Error: {type(e).__name__}\nPesan Detail: {str(e)}")
+        st.warning("Kalau muncul kotak merah ini, copy-paste isi teks kodenya ke sini ya biar langsung gw benerin!")
