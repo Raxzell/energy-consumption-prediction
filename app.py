@@ -10,15 +10,17 @@ st.title("⚡ Prediksi Energi Rumah Tangga")
 st.markdown("Aplikasi untuk memprediksi estimasi penggunaan energi peralatan rumah (Wh) berdasarkan kondisi saat ini.")
 st.divider()
 
-# 2. Inisialisasi State Awal
+# 2. Inisialisasi State Awal (DITAMBAH TANGGAL & WAKTU DI SINI)
 if 'temp' not in st.session_state:
     st.session_state.update({
         'temp': 28.0, 'humidity': 75.0, 'pressure': 733.0,
-        'wind': 5.0, 'visibility': 40.0, 'dewpoint': 5.0
+        'wind': 5.0, 'visibility': 40.0, 'dewpoint': 5.0,
+        # Set default tanggal & jam saat aplikasi pertama kali dibuka
+        'tanggal': datetime.today().date(),
+        'waktu': datetime.now().time()
     })
 
 # --- DATABASE KOTA ---
-# Dictionary berisi Latitude & Longitude beberapa kota
 DAFTAR_KOTA = {
     "Jakarta": (-6.1818, 106.8223),
     "Surabaya": (-7.2504, 112.7688),
@@ -32,20 +34,20 @@ DAFTAR_KOTA = {
 }
 # ---------------------
 
-# 3. Input Waktu
+# 3. Input Waktu (DIPERBAIKI: PAKE KEY)
 st.subheader("Waktu & Tanggal")
 col1, col2 = st.columns(2)
 with col1:
-    input_tanggal = st.date_input("Tanggal", datetime.today())
+    input_tanggal = st.date_input("Tanggal", key="tanggal")
 with col2:
-    input_waktu = st.time_input("Jam", datetime.now().time())
+    input_waktu = st.time_input("Jam", key="waktu")
 
 # 4. Input Utama
 st.subheader("Kondisi Ruangan")
 suhu_ruang_utama = st.slider("Suhu Ruang Utama / T2 (°C)", min_value=15.0, max_value=35.0, value=25.0, step=0.5)
 watt_lampu = st.number_input("Total Energi Lampu Menyala (Wh)", min_value=0, max_value=200, value=30, step=10)
 
-# --- FUNGSI TARIK API CUACA (Sekarang Menerima Parameter) ---
+# --- FUNGSI TARIK API CUACA ---
 def fetch_weather_api(lat, lon):
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,visibility,dew_point_2m"
     
@@ -69,10 +71,8 @@ def fetch_weather_api(lat, lon):
 with st.expander("Kondisi Cuaca Luar", expanded=True):
     st.caption("Pilih lokasi untuk menarik data cuaca secara otomatis, atau edit angkanya secara manual.")
     
-    # Menambahkan Selectbox untuk memilih kota
     kota_pilihan = st.selectbox("Pilih Lokasi:", list(DAFTAR_KOTA.keys()))
     
-    # Tombolnya jadi dinamis sesuai kota yang dipilih
     if st.button(f"🔄 Tarik Data Cuaca ({kota_pilihan})"):
         lat_terpilih, lon_terpilih = DAFTAR_KOTA[kota_pilihan]
         sukses = fetch_weather_api(lat_terpilih, lon_terpilih)
@@ -97,6 +97,9 @@ st.divider()
 
 # 6. Tombol Eksekusi
 if st.button("Hitung Prediksi Energi", use_container_width=True):
+    
+    # Nanti temanmu bisa pakai variabel `input_tanggal` dan `input_waktu` ini buat di-extract
+    # jadi hari_dalam_seminggu, bulan, atau jam untuk masuk ke model ML.
     
     data_input = pd.DataFrame({
         'T2': [suhu_ruang_utama],
