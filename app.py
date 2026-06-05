@@ -5,7 +5,7 @@ from datetime import datetime
 # 1. Konfigurasi Halaman (Desain Minimalis)
 st.set_page_config(page_title="Prediksi Energi Smart Home", layout="centered")
 
-st.title("Prediksi Energi Rumah Tangga")
+st.title("⚡ Prediksi Energi Rumah Tangga")
 st.markdown("Aplikasi untuk memprediksi estimasi penggunaan energi peralatan rumah (Wh) berdasarkan kondisi saat ini.")
 st.divider()
 
@@ -43,11 +43,7 @@ st.divider()
 if st.button("Hitung Prediksi Energi", use_container_width=True):
     
     # --- BAGIAN UNTUK TEMAN BACKEND-MU ---
-    # Di sini temanmu akan mengekstrak input_tanggal dan input_waktu 
-    # menjadi fitur jam, hari, dan is_weekend.
-    # Kemudian data-data ini dimasukkan ke dalam model.predict()
-    
-    # Contoh data yang siap dilempar ke model (sebagai DataFrame)
+    # Di sini temanmu akan menyusun data_input untuk diprediksi
     data_input = pd.DataFrame({
         'T2': [suhu_ruang_utama],
         'lights': [watt_lampu],
@@ -55,12 +51,31 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
         # ... (tambahkan fitur lain sesuai kebutuhan model) ...
     })
     
-    # Simulasi hasil prediksi (Ganti dengan hasil model asli)
-    hasil_prediksi_dummy = 125.5 
+    # Temanmu tinggal mengganti angka di bawah ini dengan:
+    # hasil_lr = model_lr.predict(data_input)[0]
+    # hasil_svr = model_svr.predict(data_input)[0]
+    # hasil_rf = model_rf.predict(data_input)[0]
     
+    # Simulasi hasil prediksi untuk 3 model (Angka Dummy)
+    hasil_lr = 120.5 
+    hasil_svr = 118.2
+    hasil_rf = 125.0
     # --- AKHIR BAGIAN BACKEND ---
 
     # Menampilkan hasil ke layar
-    st.success("Prediksi Berhasil!")
-    st.metric(label="Estimasi Konsumsi Energi (Appliances)", value=f"{hasil_prediksi_dummy} Wh")
-    st.info("Ini adalah tampilan awal. Nilai di atas masih berupa simulasi karena model Machine Learning belum disambungkan.")
+    st.success("Prediksi Berhasil Diproses!")
+    st.markdown("### Perbandingan Hasil Prediksi Model:")
+    
+    # Membagi output menjadi 3 kolom berdampingan
+    col_res1, col_res2, col_res3 = st.columns(3)
+    
+    with col_res1:
+        st.metric(label="Linear Regression", value=f"{hasil_lr} Wh")
+    
+    with col_res2:
+        st.metric(label="SVR", value=f"{hasil_svr} Wh")
+        
+    with col_res3:
+        st.metric(label="Random Forest", value=f"{hasil_rf} Wh")
+        
+    st.info("Catatan: Nilai di atas masih berupa simulasi dari frontend. Model Machine Learning akan segera diintegrasikan.")
