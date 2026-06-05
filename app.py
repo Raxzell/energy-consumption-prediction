@@ -21,17 +21,14 @@ st.title("⚡ Prediksi Energi Rumah Tangga")
 st.markdown("Aplikasi untuk memprediksi estimasi penggunaan energi peralatan rumah (Wh) berdasarkan kondisi saat ini.")
 st.divider()
 
-# 2. Inisialisasi State Awal (DIPERBAIKI: SETTING ZONA WAKTU GMT+7)
+# 2. Inisialisasi State Awal (ZONA WAKTU GMT+7)
 if 'temp' not in st.session_state:
-    # Bikin zona waktu khusus GMT+7 (WIB)
     tz_wib = timezone(timedelta(hours=7))
-    # Ambil waktu sekarang khusus di zona GMT+7
     waktu_sekarang = datetime.now(tz_wib)
     
     st.session_state.update({
         'temp': 28.0, 'humidity': 75.0, 'pressure': 733.0,
         'wind': 5.0, 'visibility': 40.0, 'dewpoint': 5.0,
-        # Set default tanggal & jam pake variabel waktu_sekarang yg udah GMT+7
         'tanggal': waktu_sekarang.date(),
         'waktu': waktu_sekarang.time()
     })
@@ -48,7 +45,6 @@ DAFTAR_KOTA = {
     "Makassar": (-5.1477, 119.4327),
     "Denpasar": (-8.6705, 115.2126)
 }
-# ---------------------
 
 # 3. Input Waktu
 st.subheader("Waktu & Tanggal")
@@ -81,7 +77,6 @@ def fetch_weather_api(lat, lon):
     except Exception as e:
         return False
     return False
-# -----------------------------------------------------------
 
 # 5. Input Cuaca
 with st.expander("Kondisi Cuaca Luar", expanded=True):
@@ -144,19 +139,20 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
         'rv2': [24.9]
     })
     
-    # Melakukan prediksi dari model temenmu
-    hasil_lr = lr_model.predict(data_input)[0] 
-    hasil_xgb = xgb_model.predict(data_input)[0]
-    hasil_rf = rf_model.predict(data_input)[0]
+    # Eksekusi Prediksi Model dan Konversi ke Float murni
+    hasil_lr = float(lr_model.predict(data_input)[0])
+    hasil_xgb = float(xgb_model.predict(data_input)[0])
+    hasil_rf = float(rf_model.predict(data_input)[0])
 
     st.success("Prediksi Berhasil Diproses!")
     st.markdown("### Perbandingan Hasil Prediksi Model:")
     
     col_res1, col_res2, col_res3 = st.columns(3)
     with col_res1:
-        # Pake syntax f"{variabel:.1f}" buat maksa formatnya jadi 1 angka di belakang koma
         st.metric(label="Linear Regression", value=f"{hasil_lr:.1f} Wh")
     with col_res2:
         st.metric(label="XGBoost", value=f"{hasil_xgb:.1f} Wh")
     with col_res3:
         st.metric(label="Random Forest", value=f"{hasil_rf:.1f} Wh")
+        
+    st.info("Catatan: Nilai di atas sudah dibulatkan maksimal 1 angka di belakang koma.")
