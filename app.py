@@ -144,7 +144,7 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
         'rv2': [24.9]
     })
     
-    # Simulasi hasil prediksi
+    # Melakukan prediksi dari model temenmu
     hasil_lr = lr_model.predict(data_input)[0] 
     hasil_xgb = xgb_model.predict(data_input)[0]
     hasil_rf = rf_model.predict(data_input)[0]
@@ -154,8 +154,9 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
     
     col_res1, col_res2, col_res3 = st.columns(3)
     with col_res1:
-        st.metric(label="Linear Regression", value=f"{hasil_lr} Wh")
+        # Pake syntax f"{variabel:.1f}" buat maksa formatnya jadi 1 angka di belakang koma
+        st.metric(label="Linear Regression", value=f"{hasil_lr:.1f} Wh")
     with col_res2:
-        st.metric(label="XGBoost", value=f"{hasil_xgb} Wh")
+        st.metric(label="XGBoost", value=f"{hasil_xgb:.1f} Wh")
     with col_res3:
-        st.metric(label="Random Forest", value=f"{hasil_rf} Wh")
+        st.metric(label="Random Forest", value=f"{hasil_rf:.1f} Wh")
