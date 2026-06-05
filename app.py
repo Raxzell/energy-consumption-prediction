@@ -10,12 +10,27 @@ st.title("⚡ Prediksi Energi Rumah Tangga")
 st.markdown("Aplikasi untuk memprediksi estimasi penggunaan energi peralatan rumah (Wh) berdasarkan kondisi saat ini.")
 st.divider()
 
-# 2. Inisialisasi State Awal (PENTING: Harus dipindah ke atas)
+# 2. Inisialisasi State Awal
 if 'temp' not in st.session_state:
     st.session_state.update({
         'temp': 28.0, 'humidity': 75.0, 'pressure': 733.0,
         'wind': 5.0, 'visibility': 40.0, 'dewpoint': 5.0
     })
+
+# --- DATABASE KOTA ---
+# Dictionary berisi Latitude & Longitude beberapa kota
+DAFTAR_KOTA = {
+    "Jakarta": (-6.1818, 106.8223),
+    "Surabaya": (-7.2504, 112.7688),
+    "Semarang": (-6.9667, 110.4167),
+    "Surakarta (Solo)": (-7.5561, 110.8317),
+    "Yogyakarta": (-7.7956, 110.3695),
+    "Bandung": (-6.9175, 107.6191),
+    "Medan": (3.5952, 98.6722),
+    "Makassar": (-5.1477, 119.4327),
+    "Denpasar": (-8.6705, 115.2126)
+}
+# ---------------------
 
 # 3. Input Waktu
 st.subheader("Waktu & Tanggal")
@@ -30,16 +45,14 @@ st.subheader("Kondisi Ruangan")
 suhu_ruang_utama = st.slider("Suhu Ruang Utama / T2 (°C)", min_value=15.0, max_value=35.0, value=25.0, step=0.5)
 watt_lampu = st.number_input("Total Energi Lampu Menyala (Wh)", min_value=0, max_value=200, value=30, step=10)
 
-# --- FUNGSI TARIK API CUACA ---
-def fetch_weather_api():
-    lat, lon = -6.1818, 106.8223 
+# --- FUNGSI TARIK API CUACA (Sekarang Menerima Parameter) ---
+def fetch_weather_api(lat, lon):
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,visibility,dew_point_2m"
     
     try:
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()['current']
-            # Langsung timpa nilai di session_state
             st.session_state['temp'] = float(data['temperature_2m'])
             st.session_state['humidity'] = float(data['relative_humidity_2m'])
             st.session_state['pressure'] = float(data['surface_pressure'] * 0.750062) 
@@ -50,22 +63,27 @@ def fetch_weather_api():
     except Exception as e:
         return False
     return False
-# ------------------------------
+# -----------------------------------------------------------
 
 # 5. Input Cuaca
 with st.expander("Kondisi Cuaca Luar", expanded=True):
-    st.caption("Data cuaca bisa ditarik otomatis sesuai lokasi, atau diisi/edit secara manual.")
+    st.caption("Pilih lokasi untuk menarik data cuaca secara otomatis, atau edit angkanya secara manual.")
     
-    if st.button("🔄 Tarik Data Cuaca Saat Ini (Jakarta)"):
-        sukses = fetch_weather_api()
+    # Menambahkan Selectbox untuk memilih kota
+    kota_pilihan = st.selectbox("Pilih Lokasi:", list(DAFTAR_KOTA.keys()))
+    
+    # Tombolnya jadi dinamis sesuai kota yang dipilih
+    if st.button(f"🔄 Tarik Data Cuaca ({kota_pilihan})"):
+        lat_terpilih, lon_terpilih = DAFTAR_KOTA[kota_pilihan]
+        sukses = fetch_weather_api(lat_terpilih, lon_terpilih)
+        
         if sukses:
-            st.success("Berhasil menarik data cuaca realtime!")
+            st.success(f"Berhasil menarik data cuaca realtime untuk {kota_pilihan}!")
         else:
             st.error("Gagal menarik data API, silakan isi manual.")
             
     col_cuaca1, col_cuaca2 = st.columns(2)
     
-    # PERBAIKAN: Gunakan parameter 'key' yang terikat ke session_state, BUKAN 'value'
     with col_cuaca1:
         suhu_luar = st.number_input("Suhu Luar / T_out (°C)", key="temp")
         kelembapan_luar = st.number_input("Kelembapan Luar / RH_out (%)", key="humidity")
@@ -80,8 +98,6 @@ st.divider()
 # 6. Tombol Eksekusi
 if st.button("Hitung Prediksi Energi", use_container_width=True):
     
-    # Ambil data input. Perhatikan bahwa untuk cuaca, kita mengambil nilainya dari
-    # variabel yang di-return oleh st.number_input, yang otomatis terikat dengan session_state.
     data_input = pd.DataFrame({
         'T2': [suhu_ruang_utama],
         'lights': [watt_lampu],
