@@ -1,7 +1,18 @@
 import streamlit as st
 import pandas as pd
+import joblib
 import requests
 from datetime import datetime, timedelta, timezone
+
+# Load Model
+@st.cache_resource
+def load_models():
+    lr_model = joblib.load("lr_pipeline.pkl")
+    rf_model = joblib.load("rf_pipeline.pkl")
+    xgb_model = joblib.load("xgb_pipeline.pkl")
+    return lr_model, rf_model, xgb_model
+
+lr_model, rf_model, xgb_model = load_models()
 
 # 1. Konfigurasi Halaman
 st.set_page_config(page_title="Prediksi Energi Smart Home", layout="centered")
@@ -104,20 +115,39 @@ st.divider()
 if st.button("Hitung Prediksi Energi", use_container_width=True):
     
     data_input = pd.DataFrame({
-        'T2': [suhu_ruang_utama],
         'lights': [watt_lampu],
+        'T1': [21.6],
+        'RH_1': [39.6],
+        'T2': [suhu_ruang_utama],
+        'RH_2': [40.5],
+        'T3': [22.1],
+        'RH_3': [38.5],
+        'T4': [20.6],
+        'RH_4': [38.4],
+        'T5': [19.4],
+        'RH_5': [49.0],
+        'T6': [7.3],
+        'RH_6': [55.2],
+        'T7': [20.0],
+        'RH_7': [34.8],
+        'T8': [22.1],
+        'RH_8': [43.7],
+        'T9': [19.4],
+        'RH_9': [40.9],
         'T_out': [suhu_luar],
-        'RH_out': [kelembapan_luar],
         'Press_mm_hg': [tekanan_udara],
+        'RH_out': [kelembapan_luar],
         'Windspeed': [kecepatan_angin],
         'Visibility': [visibilitas],
-        'Tdewpoint': [titik_embun]
+        'Tdewpoint': [titik_embun],
+        'rv1': [24.9],
+        'rv2': [24.9]
     })
     
     # Simulasi hasil prediksi
-    hasil_lr = 120.5 
-    hasil_svr = 118.2
-    hasil_rf = 125.0
+    hasil_lr = lr_model.predict(data_input)[0] 
+    hasil_xgb = xgb_model.predict(data_input)[0]
+    hasil_rf = rf_model.predict(data_input)[0]
 
     st.success("Prediksi Berhasil Diproses!")
     st.markdown("### Perbandingan Hasil Prediksi Model:")
@@ -126,8 +156,6 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
     with col_res1:
         st.metric(label="Linear Regression", value=f"{hasil_lr} Wh")
     with col_res2:
-        st.metric(label="SVR", value=f"{hasil_svr} Wh")
+        st.metric(label="XGBoost", value=f"{hasil_xgb} Wh")
     with col_res3:
         st.metric(label="Random Forest", value=f"{hasil_rf} Wh")
-        
-    st.info("Catatan: Nilai di atas masih berupa simulasi dari frontend.")
