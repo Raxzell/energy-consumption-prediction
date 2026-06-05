@@ -5,7 +5,7 @@ from datetime import datetime
 # 1. Konfigurasi Halaman (Desain Minimalis)
 st.set_page_config(page_title="Prediksi Energi Smart Home", layout="centered")
 
-st.title("⚡ Prediksi Energi Rumah Tangga")
+st.title("Prediksi Energi Rumah Tangga")
 st.markdown("Aplikasi untuk memprediksi estimasi penggunaan energi peralatan rumah (Wh) berdasarkan kondisi saat ini.")
 st.divider()
 
