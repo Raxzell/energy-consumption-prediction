@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 # 1. Konfigurasi Halaman
 st.set_page_config(page_title="Prediksi Energi Smart Home", layout="centered")
@@ -10,14 +10,19 @@ st.title("⚡ Prediksi Energi Rumah Tangga")
 st.markdown("Aplikasi untuk memprediksi estimasi penggunaan energi peralatan rumah (Wh) berdasarkan kondisi saat ini.")
 st.divider()
 
-# 2. Inisialisasi State Awal (DITAMBAH TANGGAL & WAKTU DI SINI)
+# 2. Inisialisasi State Awal (DIPERBAIKI: SETTING ZONA WAKTU GMT+7)
 if 'temp' not in st.session_state:
+    # Bikin zona waktu khusus GMT+7 (WIB)
+    tz_wib = timezone(timedelta(hours=7))
+    # Ambil waktu sekarang khusus di zona GMT+7
+    waktu_sekarang = datetime.now(tz_wib)
+    
     st.session_state.update({
         'temp': 28.0, 'humidity': 75.0, 'pressure': 733.0,
         'wind': 5.0, 'visibility': 40.0, 'dewpoint': 5.0,
-        # Set default tanggal & jam saat aplikasi pertama kali dibuka
-        'tanggal': datetime.today().date(),
-        'waktu': datetime.now().time()
+        # Set default tanggal & jam pake variabel waktu_sekarang yg udah GMT+7
+        'tanggal': waktu_sekarang.date(),
+        'waktu': waktu_sekarang.time()
     })
 
 # --- DATABASE KOTA ---
@@ -34,7 +39,7 @@ DAFTAR_KOTA = {
 }
 # ---------------------
 
-# 3. Input Waktu (DIPERBAIKI: PAKE KEY)
+# 3. Input Waktu
 st.subheader("Waktu & Tanggal")
 col1, col2 = st.columns(2)
 with col1:
@@ -97,9 +102,6 @@ st.divider()
 
 # 6. Tombol Eksekusi
 if st.button("Hitung Prediksi Energi", use_container_width=True):
-    
-    # Nanti temanmu bisa pakai variabel `input_tanggal` dan `input_waktu` ini buat di-extract
-    # jadi hari_dalam_seminggu, bulan, atau jam untuk masuk ke model ML.
     
     data_input = pd.DataFrame({
         'T2': [suhu_ruang_utama],
