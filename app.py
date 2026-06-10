@@ -156,10 +156,10 @@ if st.button("⚡ Hitung Prediksi Energi", use_container_width=True):
         # Pastikan urutan kolom sama persis dengan saat training
         data_input = pd.DataFrame([row])[FEATURE_ORDER]
 
-        # Prediksi dari 3 model
-        hasil_lr  = pipeline_lr.predict(data_input)[0]
-        hasil_rf  = pipeline_rf.predict(data_input)[0]
-        hasil_xgb = pipeline_xgb.predict(data_input)[0]
+        # Prediksi dari 3 model (clip ke 0 karena energi tidak mungkin negatif)
+        hasil_lr  = max(0.0, float(pipeline_lr.predict(data_input)[0]))
+        hasil_rf  = max(0.0, float(pipeline_rf.predict(data_input)[0]))
+        hasil_xgb = max(0.0, float(pipeline_xgb.predict(data_input)[0]))
 
         # Tampilkan hasil
         st.success("✅ Prediksi Berhasil!")
@@ -176,4 +176,10 @@ if st.button("⚡ Hitung Prediksi Energi", use_container_width=True):
         st.caption(
             "ℹ️ Sensor internal (T1, T3–T9, RH_1–RH_9) menggunakan nilai median dataset "
             "karena tidak diinput secara langsung."
+        )
+        st.warning(
+            "⚠️ **Catatan Linear Regression:** Model ini dilatih dari data rumah di Eropa "
+            "(suhu luar ~7°C). Jika input cuaca berbeda jauh (misal: iklim tropis), "
+            "Linear Regression bisa menghasilkan nilai tidak wajar. "
+            "Gunakan hasil **Random Forest** atau **XGBoost** sebagai acuan utama."
         )
