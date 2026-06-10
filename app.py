@@ -2,34 +2,40 @@ import streamlit as st
 import pandas as pd
 import joblib
 import requests
-import numpy as np  # <-- TAMBAHAN BARU
+import numpy as np
 from datetime import datetime, timedelta, timezone
 
 # Load Model
 @st.cache_resource
 def load_models():
-    lr_model = joblib.load("lr_pipeline.pkl")
     rf_model = joblib.load("rf_pipeline.pkl")
     xgb_model = joblib.load("xgb_pipeline.pkl")
-    return lr_model, rf_model, xgb_model
+    return rf_model, xgb_model
 
-lr_model, rf_model, xgb_model = load_models()
+rf_model, xgb_model = load_models()
 
 # 1. Konfigurasi Halaman
 st.set_page_config(page_title="Prediksi Energi Smart Home", layout="centered")
 
 st.title("Prediksi Energi Rumah Tangga")
-st.markdown("Aplikasi untuk memprediksi estimasi penggunaan energi peralatan rumah (Wh) berdasarkan kondisi saat ini.")
+st.markdown(
+    "Aplikasi untuk memprediksi estimasi penggunaan energi peralatan rumah (Wh) "
+    "berdasarkan kondisi saat ini."
+)
 st.divider()
 
 # 2. Inisialisasi State Awal (ZONA WAKTU GMT+7)
 if 'temp' not in st.session_state:
     tz_wib = timezone(timedelta(hours=7))
     waktu_sekarang = datetime.now(tz_wib)
-    
+
     st.session_state.update({
-        'temp': 28.0, 'humidity': 75.0, 'pressure': 733.0,
-        'wind': 5.0, 'visibility': 40.0, 'dewpoint': 5.0,
+        'temp': 28.0,
+        'humidity': 75.0,
+        'pressure': 733.0,
+        'wind': 5.0,
+        'visibility': 40.0,
+        'dewpoint': 5.0,
         'tanggal': waktu_sekarang.date(),
         'waktu': waktu_sekarang.time()
     })
@@ -49,57 +55,96 @@ DAFTAR_KOTA = {
 
 # 3. Input Waktu
 st.subheader("Waktu & Tanggal")
+
 col1, col2 = st.columns(2)
+
 with col1:
     input_tanggal = st.date_input("Tanggal", key="tanggal")
+
 with col2:
     input_waktu = st.time_input("Jam", key="waktu")
 
 # 4. Input Utama
 st.subheader("Kondisi Ruangan")
-suhu_ruang_utama = st.slider("Suhu Ruang Utama / T2 (°C)", min_value=15.0, max_value=35.0, value=25.0, step=0.5)
-watt_lampu = st.number_input("Total Energi Lampu Menyala (Wh)", min_value=0, max_value=200, value=30, step=10)
+
+suhu_ruang_utama = st.slider(
+    "Suhu Ruang Utama / T2 (°C)",
+    min_value=15.0,
+    max_value=35.0,
+    value=25.0,
+    step=0.5
+)
+
+watt_lampu = st.number_input(
+    "Total Energi Lampu Menyala (Wh)",
+    min_value=0,
+    max_value=200,
+    value=30,
+    step=10
+)
 
 # --- FUNGSI TARIK API CUACA ---
 def fetch_weather_api(lat, lon):
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,visibility,dew_point_2m"
-    
+    url = (
+        "https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}"
+        f"&longitude={lon}"
+        "&current=temperature_2m,relative_humidity_2m,"
+        "surface_pressure,wind_speed_10m,visibility,dew_point_2m"
+    )
+
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
+
         if response.status_code == 200:
             data = response.json()['current']
+
             st.session_state['temp'] = float(data['temperature_2m'])
             st.session_state['humidity'] = float(data['relative_humidity_2m'])
-            st.session_state['pressure'] = float(data['surface_pressure'] * 0.750062) 
-            st.session_state['wind'] = float(data['wind_speed_10m'] / 3.6) 
-            st.session_state['visibility'] = float(data['visibility'] / 1000) 
+
+            # hPa ke mmHg
+            st.session_state['pressure'] = float(data['surface_pressure'] * 0.750062)
+
+            # km/h ke m/s
+            st.session_state['wind'] = float(data['wind_speed_10m'] / 3.6)
+
+            # meter ke km
+            st.session_state['visibility'] = float(data['visibility'] / 1000)
+
             st.session_state['dewpoint'] = float(data['dew_point_2m'])
+
             return True
-    except Exception as e:
+
+    except Exception:
         return False
+
     return False
 
 # 5. Input Cuaca
 with st.expander("Kondisi Cuaca Luar", expanded=True):
-    st.caption("Pilih lokasi untuk menarik data cuaca secara otomatis, atau edit angkanya secara manual.")
-    
+    st.caption(
+        "Pilih lokasi untuk menarik data cuaca secara otomatis, "
+        "atau edit angkanya secara manual."
+    )
+
     kota_pilihan = st.selectbox("Pilih Lokasi:", list(DAFTAR_KOTA.keys()))
-    
+
     if st.button(f"🔄 Tarik Data Cuaca ({kota_pilihan})"):
         lat_terpilih, lon_terpilih = DAFTAR_KOTA[kota_pilihan]
         sukses = fetch_weather_api(lat_terpilih, lon_terpilih)
-        
+
         if sukses:
             st.success(f"Berhasil menarik data cuaca realtime untuk {kota_pilihan}!")
         else:
             st.error("Gagal menarik data API, silakan isi manual.")
-            
+
     col_cuaca1, col_cuaca2 = st.columns(2)
-    
+
     with col_cuaca1:
         suhu_luar = st.number_input("Suhu Luar / T_out (°C)", key="temp")
         kelembapan_luar = st.number_input("Kelembapan Luar / RH_out (%)", key="humidity")
         tekanan_udara = st.number_input("Tekanan Udara / Press (mmHg)", key="pressure")
+
     with col_cuaca2:
         kecepatan_angin = st.number_input("Kecepatan Angin (m/s)", key="wind")
         visibilitas = st.number_input("Visibilitas (km)", key="visibility")
@@ -109,7 +154,7 @@ st.divider()
 
 # 6. Tombol Eksekusi
 if st.button("Hitung Prediksi Energi", use_container_width=True):
-    
+
     data_input = pd.DataFrame({
         'lights': [watt_lampu],
         'T1': [21.6],
@@ -139,33 +184,32 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
         'rv1': [24.9],
         'rv2': [24.9]
     })
-    
-    # PERBAIKAN: Memaksa semua tipe data menjadi float sebelum masuk model
+
+    # Memaksa semua tipe data menjadi float sebelum masuk model
     data_input = data_input.astype(float)
-    
-    # PERBAIKAN: Try-Except Block untuk nangkep error tersembunyi
+
     try:
-        # np.ravel memastikan bentuk output apapun (array 1D, 2D, atau angka jomblo) 
-        # dipaksa jadi array rapi, baru diambil index [0]-nya.
-        hasil_lr = float(np.ravel(lr_model.predict(data_input))[0])
+        # np.ravel memastikan output model dirapikan jadi array 1D
         hasil_xgb = float(np.ravel(xgb_model.predict(data_input))[0])
         hasil_rf = float(np.ravel(rf_model.predict(data_input))[0])
 
         st.success("Prediksi Berhasil Diproses!")
         st.markdown("### Perbandingan Hasil Prediksi Model:")
-        
-        col_res1, col_res2, col_res3 = st.columns(3)
+
+        col_res1, col_res2 = st.columns(2)
+
         with col_res1:
-            st.metric(label="Linear Regression", value=f"{hasil_lr:.1f} Wh")
-        with col_res2:
             st.metric(label="XGBoost", value=f"{hasil_xgb:.1f} Wh")
-        with col_res3:
+
+        with col_res2:
             st.metric(label="Random Forest", value=f"{hasil_rf:.1f} Wh")
-            
+
         st.info("Catatan: Nilai di atas sudah dibulatkan maksimal 1 angka di belakang koma.")
-        
+
     except Exception as e:
-        # Menampilkan error ASLI yang disembunyikan Streamlit ke layar
         st.error("🚨 TERJADI ERROR SAAT MODEL MELAKUKAN PREDIKSI!")
         st.code(f"Tipe Error: {type(e).__name__}\nPesan Detail: {str(e)}")
-        st.warning("Kalau muncul kotak merah ini, copy-paste isi teks kodenya ke sini ya biar langsung gw benerin!")
+        st.warning(
+            "Kalau muncul kotak merah ini, copy-paste isi teks kodenya ke sini "
+            "biar langsung dibenerin."
+        )
