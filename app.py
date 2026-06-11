@@ -3,7 +3,6 @@ import pandas as pd
 import joblib
 import requests
 import numpy as np
-from datetime import datetime, timedelta, timezone
 
 # Load Model
 @st.cache_resource
@@ -24,20 +23,15 @@ st.markdown(
 )
 st.divider()
 
-# 2. Inisialisasi State Awal (ZONA WAKTU GMT+7)
+# 2. Inisialisasi State Awal
 if 'temp' not in st.session_state:
-    tz_wib = timezone(timedelta(hours=7))
-    waktu_sekarang = datetime.now(tz_wib)
-
     st.session_state.update({
         'temp': 28.0,
         'humidity': 75.0,
         'pressure': 733.0,
         'wind': 5.0,
         'visibility': 40.0,
-        'dewpoint': 5.0,
-        'tanggal': waktu_sekarang.date(),
-        'waktu': waktu_sekarang.time()
+        'dewpoint': 5.0
     })
 
 # --- DATABASE KOTA ---
@@ -53,18 +47,7 @@ DAFTAR_KOTA = {
     "Denpasar": (-8.6705, 115.2126)
 }
 
-# 3. Input Waktu
-st.subheader("Waktu & Tanggal")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    input_tanggal = st.date_input("Tanggal", key="tanggal")
-
-with col2:
-    input_waktu = st.time_input("Jam", key="waktu")
-
-# 4. Input Utama
+# 3. Input Utama
 st.subheader("Kondisi Ruangan")
 
 suhu_ruang_utama = st.slider(
@@ -120,7 +103,7 @@ def fetch_weather_api(lat, lon):
 
     return False
 
-# 5. Input Cuaca
+# 4. Input Cuaca
 with st.expander("Kondisi Cuaca Luar", expanded=True):
     st.caption(
         "Pilih lokasi untuk menarik data cuaca secara otomatis, "
@@ -152,7 +135,7 @@ with st.expander("Kondisi Cuaca Luar", expanded=True):
 
 st.divider()
 
-# 6. Tombol Eksekusi
+# 5. Tombol Eksekusi
 if st.button("Hitung Prediksi Energi", use_container_width=True):
 
     data_input = pd.DataFrame({
