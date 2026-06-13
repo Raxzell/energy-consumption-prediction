@@ -163,9 +163,7 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
         'RH_out': [kelembapan_luar],
         'Windspeed': [kecepatan_angin],
         'Visibility': [visibilitas],
-        'Tdewpoint': [titik_embun],
-        'rv1': [24.9],
-        'rv2': [24.9]
+        'Tdewpoint': [titik_embun]
     })
 
     # Memaksa semua tipe data menjadi float sebelum masuk model
