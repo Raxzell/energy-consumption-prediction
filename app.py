@@ -30,7 +30,6 @@ if 'temp' not in st.session_state:
         'humidity': 75.0,
         'pressure': 733.0,
         'wind': 5.0,
-        'visibility': 40.0,
         'dewpoint': 5.0
     })
 
@@ -91,9 +90,6 @@ def fetch_weather_api(lat, lon):
             # km/h ke m/s
             st.session_state['wind'] = float(data['wind_speed_10m'] / 3.6)
 
-            # meter ke km
-            st.session_state['visibility'] = float(data['visibility'] / 1000)
-
             st.session_state['dewpoint'] = float(data['dew_point_2m'])
 
             return True
@@ -130,7 +126,6 @@ with st.expander("Kondisi Cuaca Luar", expanded=True):
 
     with col_cuaca2:
         kecepatan_angin = st.number_input("Kecepatan Angin (m/s)", key="wind")
-        visibilitas = st.number_input("Visibilitas (km)", key="visibility")
         titik_embun = st.number_input("Titik Embun / Tdewpoint (°C)", key="dewpoint")
 
 st.divider()
@@ -162,7 +157,6 @@ if st.button("Hitung Prediksi Energi", use_container_width=True):
         'Press_mm_hg': [tekanan_udara],
         'RH_out': [kelembapan_luar],
         'Windspeed': [kecepatan_angin],
-        'Visibility': [visibilitas],
         'Tdewpoint': [titik_embun]
     })
 
